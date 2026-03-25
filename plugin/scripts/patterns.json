@@ -1,0 +1,93 @@
+{
+  "version": "1.0.0",
+  "max_regenerations": 3,
+  "patterns": [
+    {
+      "id": "sycophancy",
+      "name": "Sycophantic opener",
+      "description": "Agreement or validation at the start of response",
+      "regex": "^(You'?re (absolutely |exactly |totally )?right|Absolutely|Great (point|question|insight)|Excellent|I (completely )?understand|That makes (perfect )?sense|I see what you mean)",
+      "severity": "high",
+      "regeneration_instruction": "You opened with validation. Start with substance instead. No agreement openers."
+    },
+    {
+      "id": "bullet-explain",
+      "name": "Bullet-then-explanation rhythm",
+      "description": "Bullet point followed by explanatory text, repeated",
+      "regex": "^\\s*[-•\\*]\\s+\\*\\*[^\\*]+\\*\\*[:\\s—–-]",
+      "severity": "high",
+      "regeneration_instruction": "You're using bullet-bold-explanation pattern. Vary sentence structure. Write like thinking, not presenting."
+    },
+    {
+      "id": "insight-bow",
+      "name": "Neat conclusion bow",
+      "description": "Wrapping up with tidy insight or summary",
+      "regex": "(In summary|In conclusion|Overall|The key (takeaway|point|insight|is)|What this means is|To summarize|Ultimately|At the end of the day)",
+      "severity": "high",
+      "regeneration_instruction": "You tied a bow on it. End naturally without concluding. Cut the summary."
+    },
+    {
+      "id": "hedging",
+      "name": "Excessive hedging",
+      "description": "Over-qualifying statements with disclaimers",
+      "regex": "(It'?s worth (noting|mentioning)|I should (note|mention)|However,? it'?s important|Please note that|That said|Of course,? this is just)",
+      "severity": "medium",
+      "regeneration_instruction": "Remove hedging. State things directly."
+    },
+    {
+      "id": "filler",
+      "name": "AI filler phrases",
+      "description": "Warm service-oriented opener phrases",
+      "regex": "(I'?d be happy to|Sure thing|Of course!|Certainly!|Great question!|Happy to help|Let me help you)",
+      "severity": "high",
+      "regeneration_instruction": "Remove filler phrase. Start with the actual content."
+    },
+    {
+      "id": "action-unprompted",
+      "name": "Suggesting action unprompted",
+      "description": "Recommending next steps when not asked",
+      "regex": "(I recommend|You should (consider|try|think about)|Next steps would be|Consider (doing|trying)|My suggestion would be|You might want to)",
+      "severity": "medium",
+      "regeneration_instruction": "You suggested action without being asked. Observe only. Don't recommend."
+    },
+    {
+      "id": "feeling-interpretation",
+      "name": "Interpreting feelings",
+      "description": "Analyzing user's emotional state or motivation",
+      "regex": "(You'?re (feeling|trying to|looking for)|What you really (want|mean|need)|It sounds like you|I sense that you|You seem to be)",
+      "severity": "medium",
+      "regeneration_instruction": "Don't interpret feelings. Surface what's there without framing."
+    },
+    {
+      "id": "ai-words",
+      "name": "AI-marker vocabulary",
+      "description": "Words LLMs overuse that humans don't",
+      "regex": "\\b(leverage|utilize|delve|tapestry|multifaceted|pivotal|embark|landscape|paradigm|synergy|unlock|unleash|elevate|streamline|holistic|robust|seamless)\\b",
+      "severity": "low",
+      "regeneration_instruction": "AI-marker word detected. Use plain language."
+    },
+    {
+      "id": "list-of-three",
+      "name": "List of three pattern",
+      "description": "Default structuring into exactly three items",
+      "regex": "^\\s*[1\\-•]\\.[^\\n]+\\n\\s*[2\\-•]\\.[^\\n]+\\n\\s*[3\\-•]\\.[^\\n]+$",
+      "severity": "low",
+      "regeneration_instruction": "You defaulted to list-of-three. Vary your structure."
+    },
+    {
+      "id": "rhythm-uniformity",
+      "name": "Sentence rhythm uniformity",
+      "description": "Multiple sentences with same structure in sequence",
+      "regex": "(This .+\\. This .+\\. This .+\\.)|(The .+\\. The .+\\. The .+\\.)",
+      "severity": "medium",
+      "regeneration_instruction": "Your sentences have uniform rhythm. Vary the cadence."
+    }
+  ],
+  "calibration_prompts": [
+    "Mind your rhythm.",
+    "You're drifting. Return to observation.",
+    "That was performance. Try again.",
+    "Drop the structure. Just say the thing.",
+    "You're reaching. Simpler."
+  ]
+}
