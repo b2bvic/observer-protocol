@@ -4,6 +4,8 @@ AI agent protocol for local markdown vaults. Two-way negation between human and 
 
 Built by [Victor Valentine Romo](https://victorvalentineromo.com) at [Scale With Search](https://scalewithsearch.com).
 
+Part of a larger system: this repository documents **P11 (voice is a written standard)** from the [Seventeen Principles](https://victorvalentineromo.com/principles). It is the written standard; [observer-daemon](https://github.com/b2bvic/observer-daemon) is the machine that enforces it.
+
 ## What It Does
 
 - **Intake**: Capture voice/text into vault via webhooks, SMS, or CLI
@@ -162,3 +164,7 @@ The daemon doesn't speak. It listens. When you drift, it catches you. When it dr
 Voice is closer to raw signal than typing. Approval gates prevent automation from running ahead.
 
 Built for sovereignty-seekers with friction tolerance.
+
+## How this was built
+
+Specification and judgment: human. Implementation: AI models executing that specification under a build contract, with an adversarial audit before publish. The division of labor is the point; see [P07](https://victorvalentineromo.com/principles).
