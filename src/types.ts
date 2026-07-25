@@ -16,7 +16,6 @@ export interface ObserverConfig {
   };
   reflection?: ReflectionConfig;
   negation?: NegationConfig;
-  sms?: SMSConfig;
 }
 
 export interface DomainMapping {
@@ -45,24 +44,6 @@ export interface NegationConfig {
   user_drift_mode: 'silent' | 'surface';
 }
 
-export interface SMSConfig {
-  enabled: boolean;
-  provider: 'twilio' | 'vonage' | 'local-gateway';
-  phone: string;
-  inbound: {
-    webhook: string;
-    auth: string;
-  };
-  outbound: {
-    approval_requests: boolean;
-    pattern_alerts: boolean;
-    error_notifications: boolean;
-  };
-  rate_limit: {
-    max_outbound_per_hour: number;
-    quiet_hours: [number, number];
-  };
-}
 
 // Loop Types
 

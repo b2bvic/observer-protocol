@@ -135,7 +135,6 @@ export class LoopRunner {
         run.status = 'pending_approval';
         run.output = draftPath;
 
-        // TODO: Send SMS notification if configured
 
         this.updateState(state, run);
         return run;

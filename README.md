@@ -8,7 +8,7 @@ Part of a larger system: this repository documents **P11 (voice is a written sta
 
 ## What It Does
 
-- **Intake**: Capture voice/text into vault via webhooks, SMS, or CLI
+- **Intake**: Capture voice/text into vault via webhooks or CLI
 - **Loops**: Self-running tasks with approval gates
 - **Corrections**: Log when you're corrected, learn patterns, auto-correct
 - **Drafts**: Queue outputs for approval before publishing
@@ -67,7 +67,6 @@ npm run dev -- corrections
 GET  /health              Health check
 POST /intake/voice        Voice transcription
 POST /intake/text         Text intake
-POST /sms/inbound         Twilio SMS webhook
 GET  /loops               List loops
 POST /loops/:id/run       Run loop once
 POST /loops/:id/pause     Pause loop
@@ -81,16 +80,6 @@ POST /corrections         Log a correction
 GET  /reflect             Reflection analysis
 GET  /recent              Recent file changes
 ```
-
-### SMS Commands
-
-Text these to your Twilio number:
-
-- `Y` / `YES` - Approve next pending draft
-- `N` / `NO` - Reject next pending draft
-- `STATUS` - Get active loop count
-- `PAUSE <loop-id>` - Pause a loop
-- `NOTE: <text>` - Quick intake
 
 ### Voice Intake (iOS)
 
