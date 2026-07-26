@@ -10,7 +10,7 @@ Part of a larger system: this repository documents **P11 (voice is a written sta
 
 - **Intake**: Capture voice/text into vault via webhooks or CLI
 - **Loops**: Self-running tasks with approval gates
-- **Corrections**: Log when you're corrected, learn patterns, auto-correct
+- **Corrections**: Log corrections and track recurring correction patterns
 - **Drafts**: Queue outputs for approval before publishing
 - **Reflection**: Analyze activity patterns over time
 
