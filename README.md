@@ -9,7 +9,7 @@ Part of a larger system: this repository documents **P11 (voice is a written sta
 ## What It Does
 
 - **Intake**: Capture voice/text into vault via webhooks or CLI
-- **Loops**: Self-running tasks with approval gates
+- **Loops**: Scheduled tasks with approval gates
 - **Corrections**: Log corrections and track recurring correction patterns
 - **Drafts**: Queue outputs for approval before publishing
 - **Reflection**: Analyze activity patterns over time
@@ -17,8 +17,10 @@ Part of a larger system: this repository documents **P11 (voice is a written sta
 ## Install
 
 ```bash
-cd Observer\ Protocol
-npm install
+git clone https://github.com/b2bvic/observer-protocol.git
+cd observer-protocol
+npm ci
+npm run build
 ```
 
 ## Usage
@@ -81,12 +83,6 @@ GET  /reflect             Reflection analysis
 GET  /recent              Recent file changes
 ```
 
-### Voice Intake (iOS)
-
-Hardware button → Wispr Flow → Webhook → Vault
-
-See `iOS Shortcut Setup.md` for configuration.
-
 ## Directory Structure
 
 ```
@@ -132,17 +128,11 @@ output:
   draft_path: "Drafts/"
 ```
 
-## Obsidian Plugin
+## Companion scripts
 
-Plugin scaffolding in `obsidian-plugin/`. To install:
-
-```bash
-cd obsidian-plugin
-npm install
-npm run build
-```
-
-Copy `main.js`, `styles.css`, `manifest.json` to `.obsidian/plugins/observer-protocol/`
+`plugin/scripts/` contains a shell response analyzer and its pattern file. It
+is not an installable Obsidian plugin. Review both files before adapting the
+analyzer to another transcript or vault layout.
 
 ## Philosophy
 

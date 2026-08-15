@@ -2,7 +2,7 @@
   "name": "observer-protocol",
   "version": "0.1.0",
   "description": "AI agent protocol for local markdown vaults",
-  "main": "dist/index.js",
+  "main": "dist/cli.js",
   "bin": {
     "observer": "./dist/cli.js"
   },
@@ -10,8 +10,7 @@
     "build": "tsc",
     "dev": "ts-node src/cli.ts",
     "start": "node dist/cli.js",
-    "server": "ts-node src/server.ts",
-    "test": "jest"
+    "server": "ts-node src/server.ts"
   },
   "keywords": [
     "obsidian",
