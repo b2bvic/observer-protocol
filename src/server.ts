@@ -5,6 +5,7 @@ import { Config, findVaultRoot } from './config';
 import { LoopRunner } from './loop-runner';
 import { Analyzer } from './analyzer';
 import { IntakeEntry } from './types';
+import { readDraft, setDraftStatus, validateId } from './drafts';
 
 const app = express();
 app.use(express.json());
@@ -16,8 +17,8 @@ const authMiddleware = (req: express.Request, res: express.Response, next: expre
   const token = process.env.OBSERVER_TOKEN;
 
   if (!token) {
-    // No token configured, allow all
-    return next();
+    // Fail closed when the service has no configured credential.
+    return res.status(503).json({ error: 'OBSERVER_TOKEN is not configured' });
   }
 
   if (!authHeader || authHeader !== `Bearer ${token}`) {
@@ -28,7 +29,7 @@ const authMiddleware = (req: express.Request, res: express.Response, next: expre
 };
 
 // Find vault on startup
-const vaultPath = findVaultRoot() || process.env.VAULT_PATH;
+const vaultPath = process.env.VAULT_PATH || findVaultRoot();
 if (!vaultPath) {
   console.error('Could not find vault. Set VAULT_PATH or run from within vault.');
   process.exit(1);
@@ -39,7 +40,7 @@ const loopRunner = new LoopRunner(vaultPath);
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', vault: vaultPath });
+  res.json({ status: 'ok' });
 });
 
 // Voice intake endpoint
@@ -157,15 +158,13 @@ app.get('/drafts', authMiddleware, (req, res) => {
   const files = fs.readdirSync(draftsPath).filter(f => f.endsWith('.md'));
   const drafts = files.map(file => {
     const content = fs.readFileSync(path.join(draftsPath, file), 'utf-8');
-    const statusMatch = content.match(/status::\s*(\w+)/);
-    const loopMatch = content.match(/loop::\s*(\S+)/);
-    const createdMatch = content.match(/created::\s*(\S+)/);
+    const draft = readDraft(path.join(draftsPath, file));
 
     return {
       id: file.replace('.md', ''),
-      status: statusMatch ? statusMatch[1] : 'unknown',
-      loop: loopMatch ? loopMatch[1] : 'unknown',
-      created: createdMatch ? createdMatch[1] : '',
+      status: draft.data.status || 'unknown',
+      loop: draft.data.loop || 'unknown',
+      created: draft.data.created || '',
       preview: content.replace(/^---[\s\S]*?---\n?/, '').trim().slice(0, 100),
     };
   });
@@ -185,11 +184,11 @@ app.get('/drafts/pending', authMiddleware, (req, res) => {
 
   for (const file of files) {
     const content = fs.readFileSync(path.join(draftsPath, file), 'utf-8');
-    if (content.includes('status:: pending')) {
-      const loopMatch = content.match(/loop::\s*(\S+)/);
+    const draft = readDraft(path.join(draftsPath, file));
+    if (draft.data.status === 'pending') {
       pending.push({
         id: file.replace('.md', ''),
-        loop: loopMatch ? loopMatch[1] : 'unknown',
+        loop: draft.data.loop || 'unknown',
         preview: content.replace(/^---[\s\S]*?---\n?/, '').trim().slice(0, 100),
       });
     }
@@ -199,36 +198,26 @@ app.get('/drafts/pending', authMiddleware, (req, res) => {
 });
 
 app.post('/drafts/:id/approve', authMiddleware, (req, res) => {
-  const draftPath = path.join(vaultPath!, '.observer', 'drafts', `${req.params.id}.md`);
+  const draftPath = path.join(vaultPath!, '.observer', 'drafts', `${validateId(req.params.id)}.md`);
 
   if (!fs.existsSync(draftPath)) {
     return res.status(404).json({ error: 'Draft not found' });
   }
 
-  let content = fs.readFileSync(draftPath, 'utf-8');
-  content = content.replace(/status::\s*pending/, 'status:: approved');
-  content = content.replace(/---\n/, `---\napproved_at:: ${new Date().toISOString()}\n`);
-  fs.writeFileSync(draftPath, content);
+  setDraftStatus(vaultPath!, req.params.id, 'approved');
 
   res.json({ status: 'approved', id: req.params.id });
 });
 
 app.post('/drafts/:id/reject', authMiddleware, (req, res) => {
-  const draftPath = path.join(vaultPath!, '.observer', 'drafts', `${req.params.id}.md`);
+  const draftPath = path.join(vaultPath!, '.observer', 'drafts', `${validateId(req.params.id)}.md`);
 
   if (!fs.existsSync(draftPath)) {
     return res.status(404).json({ error: 'Draft not found' });
   }
 
-  let content = fs.readFileSync(draftPath, 'utf-8');
-  content = content.replace(/status::\s*pending/, 'status:: rejected');
-
   const reason = req.body.reason || '';
-  if (reason) {
-    content = content.replace(/---\n/, `---\nrejection_reason:: ${reason}\n`);
-  }
-
-  fs.writeFileSync(draftPath, content);
+  setDraftStatus(vaultPath!, req.params.id, 'rejected', reason);
 
   res.json({ status: 'rejected', id: req.params.id, reason });
 });
@@ -357,11 +346,10 @@ app.get('/analyze', authMiddleware, async (req, res) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 3847;
-
 export function startServer() {
-  app.listen(PORT, () => {
-    console.log(`Observer server running on port ${PORT}`);
+  const port = Number(process.env.PORT || 3847);
+  return app.listen(port, '127.0.0.1', () => {
+    console.log(`Observer server running on 127.0.0.1:${port}`);
     console.log(`Vault: ${vaultPath}`);
 
     // Start active loops

@@ -3,3 +3,6 @@ dist/
 .DS_Store
 *.js.map
 .observer/
+__pycache__/
+*.pyc
+.test-*/

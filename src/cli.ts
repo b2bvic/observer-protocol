@@ -6,8 +6,8 @@ import * as path from 'path';
 import * as yaml from 'yaml';
 import { Config, findVaultRoot } from './config';
 import { LoopRunner } from './loop-runner';
-import { startServer } from './server';
 import { Analyzer } from './analyzer';
+import { readDraft, setDraftStatus, validateId } from './drafts';
 
 const program = new Command();
 
@@ -18,7 +18,7 @@ program
 
 // Find vault
 function getVaultPath(): string {
-  const vaultPath = findVaultRoot() || process.env.VAULT_PATH;
+  const vaultPath = process.env.VAULT_PATH || findVaultRoot();
   if (!vaultPath) {
     console.error('Could not find vault. Run from within vault or set VAULT_PATH.');
     process.exit(1);
@@ -179,6 +179,7 @@ program
   .option('-p, --port <port>', 'Port to listen on', '3847')
   .action((options) => {
     process.env.PORT = options.port;
+    const { startServer } = require('./server');
     startServer();
   });
 
@@ -303,10 +304,9 @@ program
     console.log('\nDrafts:\n');
     for (const file of files) {
       const content = fs.readFileSync(path.join(draftsPath, file), 'utf-8');
-      const statusMatch = content.match(/status::\s*(\w+)/);
-      const loopMatch = content.match(/loop::\s*(\S+)/);
-      const status = statusMatch ? statusMatch[1] : 'unknown';
-      const loop = loopMatch ? loopMatch[1] : 'unknown';
+      const draft = readDraft(path.join(draftsPath, file));
+      const status = String(draft.data.status || 'unknown');
+      const loop = String(draft.data.loop || 'unknown');
 
       const preview = content.replace(/^---[\s\S]*?---\n?/, '').trim().slice(0, 60);
       const id = file.replace('.md', '');
@@ -324,16 +324,14 @@ program
   .description('Approve a draft')
   .action((id) => {
     const vaultPath = getVaultPath();
-    const draftPath = path.join(vaultPath, '.observer', 'drafts', `${id}.md`);
+    const draftPath = path.join(vaultPath, '.observer', 'drafts', `${validateId(id)}.md`);
 
     if (!fs.existsSync(draftPath)) {
       console.error(`Draft not found: ${id}`);
       process.exit(1);
     }
 
-    let content = fs.readFileSync(draftPath, 'utf-8');
-    content = content.replace(/status::\s*pending/, 'status:: approved');
-    fs.writeFileSync(draftPath, content);
+    setDraftStatus(vaultPath, id, 'approved');
 
     console.log(`Approved: ${id}`);
   });
@@ -345,19 +343,14 @@ program
   .option('-r, --reason <reason>', 'Rejection reason')
   .action((id, options) => {
     const vaultPath = getVaultPath();
-    const draftPath = path.join(vaultPath, '.observer', 'drafts', `${id}.md`);
+    const draftPath = path.join(vaultPath, '.observer', 'drafts', `${validateId(id)}.md`);
 
     if (!fs.existsSync(draftPath)) {
       console.error(`Draft not found: ${id}`);
       process.exit(1);
     }
 
-    let content = fs.readFileSync(draftPath, 'utf-8');
-    content = content.replace(/status::\s*pending/, 'status:: rejected');
-    if (options.reason) {
-      content = content.replace(/---\n/, `---\nrejection_reason:: ${options.reason}\n`);
-    }
-    fs.writeFileSync(draftPath, content);
+    setDraftStatus(vaultPath, id, 'rejected', options.reason);
 
     console.log(`Rejected: ${id}`);
   });

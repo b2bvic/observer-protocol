@@ -4,6 +4,8 @@ import * as yaml from 'yaml';
 import matter from 'gray-matter';
 import { ObserverConfig, LoopConfig, LoopState, Correction, Pattern, IntakeEntry } from './types';
 
+import { validateId } from './drafts';
+
 const OBSERVER_DIR = '.observer';
 const CLAUDE_MD = 'CLAUDE.md';
 
@@ -84,7 +86,7 @@ export class Config {
 
   // Load a specific loop configuration
   loadLoop(loopId: string): LoopConfig | null {
-    const loopPath = path.join(this.observerPath, 'loops', `${loopId}.yaml`);
+    const loopPath = path.join(this.observerPath, 'loops', `${validateId(loopId)}.yaml`);
     if (!fs.existsSync(loopPath)) {
       return null;
     }
@@ -95,7 +97,7 @@ export class Config {
 
   // Save a loop configuration
   saveLoop(config: LoopConfig): void {
-    const loopPath = path.join(this.observerPath, 'loops', `${config.id}.yaml`);
+    const loopPath = path.join(this.observerPath, 'loops', `${validateId(config.id)}.yaml`);
     fs.writeFileSync(loopPath, yaml.stringify(config));
   }
 
@@ -115,7 +117,7 @@ export class Config {
 
   // Load loop state
   loadLoopState(loopId: string): LoopState | null {
-    const statePath = path.join(this.observerPath, 'loops', `${loopId}.state.json`);
+    const statePath = path.join(this.observerPath, 'loops', `${validateId(loopId)}.state.json`);
     if (!fs.existsSync(statePath)) {
       return null;
     }
@@ -125,7 +127,7 @@ export class Config {
 
   // Save loop state
   saveLoopState(state: LoopState): void {
-    const statePath = path.join(this.observerPath, 'loops', `${state.id}.state.json`);
+    const statePath = path.join(this.observerPath, 'loops', `${validateId(state.id)}.state.json`);
     fs.writeFileSync(statePath, JSON.stringify(state, null, 2));
   }
 

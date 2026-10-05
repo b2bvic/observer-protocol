@@ -8,7 +8,7 @@ import { LoopConfig, LoopState, LoopRun } from './types';
 export class LoopRunner {
   private config: Config;
   private vaultPath: string;
-  private activeJobs: Map<string, cron.ScheduledTask> = new Map();
+  private activeJobs: Map<string, { stop: () => void | Promise<void> }> = new Map();
 
   constructor(vaultPath: string) {
     this.vaultPath = vaultPath;
@@ -58,7 +58,7 @@ export class LoopRunner {
 
         const runWithJitter = async () => {
           const jitter = Math.random() * jitterMs;
-          setTimeout(() => this.execute(loop, state!), jitter);
+          setTimeout(async () => { await this.execute(loop, state!); }, jitter);
         };
 
         // Use setInterval for simple interval scheduling
@@ -67,7 +67,7 @@ export class LoopRunner {
 
         console.log(`Started loop ${loopId} with interval ${loop.schedule.value}`);
       } else if (loop.schedule.type === 'cron') {
-        const task = cron.schedule(loop.schedule.value, () => this.execute(loop, state!));
+        const task = cron.schedule(loop.schedule.value, async () => { await this.execute(loop, state!); });
         this.activeJobs.set(loopId, task);
         console.log(`Started loop ${loopId} with cron ${loop.schedule.value}`);
       }

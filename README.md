@@ -1,20 +1,13 @@
-# Observer Protocol
+# AI agent governance protocol: observer-protocol
 
-AI agent protocol for local markdown vaults. Two-way negation between human and machine. Catches drift on both sides.
+Observer-protocol captures Markdown intake, correction history, and local drafts for operators who review hosted-model work.
+It helps you inspect recent record patterns and retain human review status before connecting an action service.
 
-Built by [Victor Valentine Romo](https://victorvalentineromo.com) at [Scale With Search](https://scalewithsearch.com).
-
-Part of a larger system: this repository documents **P11 (voice is a written standard)** from the [Seventeen Principles](https://victorvalentineromo.com/principles). It is the written standard; [observer-daemon](https://github.com/b2bvic/observer-daemon) is the machine that enforces it.
-
-## What It Does
-
-- **Intake**: Capture voice/text into vault via webhooks or CLI
-- **Loops**: Scheduled tasks with approval gates
-- **Corrections**: Log corrections and track recurring correction patterns
-- **Drafts**: Queue outputs for approval before publishing
-- **Reflection**: Analyze activity patterns over time
+[Project page](https://scalewithsearch.com/code/observer-protocol)
 
 ## Install
+
+Use Node.js 22 or 24, npm, and Git.
 
 ```bash
 git clone https://github.com/b2bvic/observer-protocol.git
@@ -23,127 +16,65 @@ npm ci
 npm run build
 ```
 
-## Usage
+## Quick start
 
-### CLI
+Use a temporary Markdown record:
 
 ```bash
-# Initialize .observer in vault
-npm run dev -- init
-
-# Check status
-npm run dev -- status
-
-# Start webhook server
-npm run dev -- server
-
-# Manual intake
-npm run dev -- intake "thought to capture"
-
-# List loops
-npm run dev -- loop list
-
-# Run a loop once
-npm run dev -- loop run <id>
-
-# List pending drafts
-npm run dev -- drafts
-
-# Approve/reject drafts
-npm run dev -- approve <id>
-npm run dev -- reject <id> -r "reason"
-
-# Reflection analysis
-npm run dev -- reflect -d 7
-
-# Recent files
-npm run dev -- recent -d 1
-
-# View corrections
-npm run dev -- corrections
+demo_record=$(mktemp -d)
+export VAULT_PATH="$demo_record"
+node dist/cli.js init
+node dist/cli.js intake "Review the synthetic release notes."
+node dist/cli.js status
+node dist/cli.js reflect -d 7
 ```
 
-### Webhook Endpoints
+The commands create `.observer/` storage, capture an intake file, and report local status.
+`VAULT_PATH` selects the record explicitly. Without it, vault discovery looks for an ancestor `CLAUDE.md`.
+Run `node dist/cli.js --help` to inspect the available commands.
 
-```
-GET  /health              Health check
-POST /intake/voice        Voice transcription
-POST /intake/text         Text intake
-GET  /loops               List loops
-POST /loops/:id/run       Run loop once
-POST /loops/:id/pause     Pause loop
-POST /loops/:id/resume    Resume loop
-GET  /drafts              List all drafts
-GET  /drafts/pending      List pending drafts
-POST /drafts/:id/approve  Approve draft
-POST /drafts/:id/reject   Reject draft
-GET  /corrections         Get corrections/patterns
-POST /corrections         Log a correction
-GET  /reflect             Reflection analysis
-GET  /recent              Recent file changes
-```
+## How it works
 
-## Directory Structure
+`Config` stores intake as Markdown, corrections as JSONL, patterns as JSON, and loops as YAML.
+The analyzer scans recent Markdown files for recurring terms, possible contradictions, maintenance flags, and unchecked checkboxes.
+Markdown agent behavior analysis uses heuristics. Review each finding against its source.
+Agent correction history records triggers and repeated pattern counts; the `auto_correct` flag does not implement a text rewriter.
 
-```
-.observer/
-├── corrections.jsonl     # Logged corrections
-├── patterns.json         # Learned patterns
-├── loops/                # Loop YAML configs
-│   └── *.yaml
-├── drafts/               # Pending outputs
-│   └── *.md
-└── intake/               # Captured voice/text
-    └── *.md
+A loop with `require_approval: true` writes a pending draft.
+CLI and HTTP draft commands update YAML status to approved or rejected and preserve the body.
+These local review records are patterns a team can adopt for human-in-the-loop agent review.
+Connect a separate action service that checks authorization where the action executes.
+
+The optional webhook server binds to `127.0.0.1`. Protected endpoints require `OBSERVER_TOKEN`; `/health` reports only service status.
+Set a token and review active loop configurations before running `node dist/cli.js server`.
+The server starts configured active loops when it starts.
+
+Run the checks:
+
+```bash
+npm run lint
+npm test
+npm audit --audit-level=moderate
 ```
 
-## Loop Configuration
+## Limits
 
-```yaml
-id: example-loop
-type: interval
-status: active
-objective: "What this loop does"
+- This prototype supplies local records and heuristic analysis. It contains no model invocation, publishing adapter, or universal approval service.
+- Approving a draft changes local status. It does not publish the draft or grant permission to an external service.
+- Pending drafts do not stop active schedules. The current daily counter reset does not establish a reliable daily quota.
+- Stopping an interval does not cancel an already queued jitter callback. Review scheduling behavior before using it for production work.
+- Loop paths, regexes, and the vault must be trusted. Identifier validation does not create a filesystem sandbox or protect against symlink escapes.
+- Privacy filters match basic text patterns. They do not prove that output contains no private information.
+- Default draft commands inspect `.observer/drafts/`. A custom `draft_path` requires your own review adapter.
+- `plugin/scripts/` contains a companion shell analyzer. It is not an installable Obsidian plugin.
 
-source:
-  paths:
-    - "folder/**/*.md"
-  filter: "status:: ready"
+## Related repositories
 
-constraints:
-  privacy_weight: 0.7
-  restricted_topics:
-    - client-names
-    - revenue-numbers
-  max_per_day: 3
+- [agent-oversight](https://github.com/b2bvic/agent-oversight): orchestration cluster and evaluation guide.
+- [observer-daemon](https://github.com/b2bvic/observer-daemon): deterministic response writing checks.
+- [skills](https://github.com/b2bvic/skills): explicit local artifact verification.
+- [safe-api](https://github.com/b2bvic/safe-api): configured controls around REST write calls.
 
-schedule:
-  type: interval
-  value: 8h
-  jitter: 2h
-  active_hours: [8, 22]
+## License
 
-output:
-  require_approval: true
-  draft_path: "Drafts/"
-```
-
-## Companion scripts
-
-`plugin/scripts/` contains a shell response analyzer and its pattern file. It
-is not an installable Obsidian plugin. Review both files before adapting the
-analyzer to another transcript or vault layout.
-
-## Philosophy
-
-This is not a second brain. It's a control system.
-
-The daemon doesn't speak. It listens. When you drift, it catches you. When it drifts, you correct it.
-
-Voice is closer to raw signal than typing. Approval gates prevent automation from running ahead.
-
-Built for sovereignty-seekers with friction tolerance.
-
-## How this was built
-
-Specification and judgment: human. Implementation: AI models executing that specification under a build contract, with an adversarial audit before publish. The division of labor is the point; see [P07](https://victorvalentineromo.com/principles).
+[MIT](LICENSE).
