@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const { test, after } = require('node:test');
 const fs = require('node:fs');
 const path = require('node:path');
-const { execFileSync } = require('node:child_process');
+const { execFileSync, spawnSync } = require('node:child_process');
 const root = fs.mkdtempSync(path.join(process.cwd(), '.test-'));
 process.env.VAULT_PATH = root;
 fs.writeFileSync(path.join(root, 'CLAUDE.md'), '# Synthetic record\n');
@@ -143,6 +143,12 @@ test('CLI draft commands share the YAML status implementation', () => {
   assert.match(execFileSync(process.execPath, [cli, 'drafts'], { env, encoding: 'utf8' }), /PENDING/);
   execFileSync(process.execPath, [cli, 'approve', 'cli-example'], { env });
   assert.equal(require('../dist/drafts').readDraft(file).data.status, 'approved');
+  for (const id of ['cli-example', '../outside']) {
+    const result = spawnSync(process.execPath, [cli, 'reject', id], { env, encoding: 'utf8' });
+    assert.equal(result.status, 1);
+    assert.doesNotMatch(result.stderr, /\n\s+at /);
+  }
+  assert.equal(require('../dist/drafts').readDraft(file).data.status, 'approved');
 });
 
 test('server startup binds loopback and HTTP review persists draft status', async () => {
@@ -163,6 +169,14 @@ test('server startup binds loopback and HTTP review persists draft status', asyn
     const response = await fetch(`${url}/drafts/http-example/approve`, { method: 'POST', headers });
     assert.equal(response.status, 200);
     assert.equal(readDraft(file).data.status, 'approved');
+    const repeat = await fetch(`${url}/drafts/http-example/reject`, { method: 'POST', headers });
+    assert.equal(repeat.status, 409);
+    assert.equal(readDraft(file).data.status, 'approved');
+    const invalid = await fetch(`${url}/drafts/x%2Fy/approve`, { method: 'POST', headers });
+    assert.equal(invalid.status, 400);
+    assert.deepEqual(await invalid.json(), { error: 'Invalid draft identifier' });
+    const missing = await fetch(`${url}/drafts/absent-example/approve`, { method: 'POST', headers });
+    assert.equal(missing.status, 404);
   } finally {
     delete process.env.PORT;
     delete process.env.OBSERVER_TOKEN;

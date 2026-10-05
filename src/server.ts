@@ -197,29 +197,34 @@ app.get('/drafts/pending', authMiddleware, (req, res) => {
   res.json(pending);
 });
 
-app.post('/drafts/:id/approve', authMiddleware, (req, res) => {
-  const draftPath = path.join(vaultPath!, '.observer', 'drafts', `${validateId(req.params.id)}.md`);
+// Apply one review decision. Invalid identifiers and non-pending drafts are client errors.
+function reviewDraft(req: express.Request, res: express.Response, status: 'approved' | 'rejected', reason?: string) {
+  let id: string;
+  try {
+    id = validateId(req.params.id);
+  } catch {
+    return res.status(400).json({ error: 'Invalid draft identifier' });
+  }
 
+  const draftPath = path.join(vaultPath!, '.observer', 'drafts', `${id}.md`);
   if (!fs.existsSync(draftPath)) {
     return res.status(404).json({ error: 'Draft not found' });
   }
 
-  setDraftStatus(vaultPath!, req.params.id, 'approved');
+  if (readDraft(draftPath).data.status !== 'pending') {
+    return res.status(409).json({ error: 'Draft must be pending before review' });
+  }
 
-  res.json({ status: 'approved', id: req.params.id });
+  setDraftStatus(vaultPath!, id, status, reason);
+  return res.json(status === 'approved' ? { status, id } : { status, id, reason: reason || '' });
+}
+
+app.post('/drafts/:id/approve', authMiddleware, (req, res) => {
+  reviewDraft(req, res, 'approved');
 });
 
 app.post('/drafts/:id/reject', authMiddleware, (req, res) => {
-  const draftPath = path.join(vaultPath!, '.observer', 'drafts', `${validateId(req.params.id)}.md`);
-
-  if (!fs.existsSync(draftPath)) {
-    return res.status(404).json({ error: 'Draft not found' });
-  }
-
-  const reason = req.body.reason || '';
-  setDraftStatus(vaultPath!, req.params.id, 'rejected', reason);
-
-  res.json({ status: 'rejected', id: req.params.id, reason });
+  reviewDraft(req, res, 'rejected', req.body?.reason || '');
 });
 
 // Corrections endpoint

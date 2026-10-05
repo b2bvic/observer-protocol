@@ -318,20 +318,28 @@ program
     }
   });
 
+// Report review errors without a stack trace and exit with a failing status.
+function reviewDraftFromCli(vaultPath: string, id: string, apply: () => void): void {
+  try {
+    const draftPath = path.join(vaultPath, '.observer', 'drafts', `${validateId(id)}.md`);
+    if (!fs.existsSync(draftPath)) {
+      console.error(`Draft not found: ${id}`);
+      process.exit(1);
+    }
+    apply();
+  } catch (error) {
+    console.error((error as Error).message);
+    process.exit(1);
+  }
+}
+
 // Approve command
 program
   .command('approve <id>')
   .description('Approve a draft')
   .action((id) => {
     const vaultPath = getVaultPath();
-    const draftPath = path.join(vaultPath, '.observer', 'drafts', `${validateId(id)}.md`);
-
-    if (!fs.existsSync(draftPath)) {
-      console.error(`Draft not found: ${id}`);
-      process.exit(1);
-    }
-
-    setDraftStatus(vaultPath, id, 'approved');
+    reviewDraftFromCli(vaultPath, id, () => setDraftStatus(vaultPath, id, 'approved'));
 
     console.log(`Approved: ${id}`);
   });
@@ -343,14 +351,7 @@ program
   .option('-r, --reason <reason>', 'Rejection reason')
   .action((id, options) => {
     const vaultPath = getVaultPath();
-    const draftPath = path.join(vaultPath, '.observer', 'drafts', `${validateId(id)}.md`);
-
-    if (!fs.existsSync(draftPath)) {
-      console.error(`Draft not found: ${id}`);
-      process.exit(1);
-    }
-
-    setDraftStatus(vaultPath, id, 'rejected', options.reason);
+    reviewDraftFromCli(vaultPath, id, () => setDraftStatus(vaultPath, id, 'rejected', options.reason));
 
     console.log(`Rejected: ${id}`);
   });
